@@ -29,6 +29,12 @@ float lRotateIndex = 1;
   myCar.Move(Stop, 0)             Stop
 */
 
+// void buzz() {
+//   tone(pinBuzzer, 262);
+//   tone(pinBuzzer, 494);
+//   noTone(pinBuzzer);
+// }
+
 void led() {
   digitalWrite(pinLeftLED, HIGH);
   digitalWrite(pinRightLED, LOW);
