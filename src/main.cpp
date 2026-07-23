@@ -11,7 +11,7 @@
 
 vehicle myCar;
 
-Servo servo_0;
+Servo servo;
 
 float rRotateIndex = 1;
 float lRotateIndex = 1;
@@ -38,9 +38,11 @@ float lRotateIndex = 1;
 void led() {
   digitalWrite(pinLeftLED, HIGH);
   digitalWrite(pinRightLED, LOW);
+  servo.write(45);
   delay(500);
   digitalWrite(pinLeftLED, LOW);
   digitalWrite(pinRightLED, HIGH);
+  servo.write(135);
   delay(400);
 }
 
@@ -60,10 +62,13 @@ void move() {
 void setup() {
   Serial.begin(115200);
 
+  servo.attach(pinServo, 500, 2500);
+  servo.setPeriodHertz(50);
+  servo.write(90);
+
   pinMode(pinLeftLED, OUTPUT);
   pinMode(pinIr, INPUT);
   pinMode(pinRightLED, OUTPUT);
-  pinMode(pinServo, OUTPUT);
   pinMode(pinBuzzer, OUTPUT);
 
   myCar.Init();
