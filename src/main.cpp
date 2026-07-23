@@ -38,11 +38,11 @@ float lRotateIndex = 1;
 void led() {
   digitalWrite(pinLeftLED, HIGH);
   digitalWrite(pinRightLED, LOW);
-  servo.write(45);
+  servo.write(135);
   delay(500);
   digitalWrite(pinLeftLED, LOW);
   digitalWrite(pinRightLED, HIGH);
-  servo.write(135);
+  servo.write(45);
   delay(400);
 }
 
