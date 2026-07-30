@@ -27,7 +27,7 @@ float lRotateIndex = 1;
   myCar.Move(Contrarotate, 255);  Rotate Anti-clockwise
 
   myCar.Move(Move_Left, 255);     Strafe Left
-  myCar.Move(Move_right, 255);    Strafe Right
+  myCar.Move(Move_Right, 255);    Strafe Right
 
   myCar.Move(Stop, 0)             Stop
 */
@@ -41,13 +41,25 @@ float lRotateIndex = 1;
 void remote() {
   if (irrecv.decode()) {
     if (!irrecv.decodedIRData.flags) {
-      Serial.print("IR Code Received: 0x");
-      int signal = (irrecv.decodedIRData.command, HEX);
+      Serial.print("IR Code Received: ");
+      int signal = irrecv.decodedIRData.command;
       Serial.println(signal);
-      if (signal == 46) {
-        myCar.Move(Forward, 255);
-      } else if (signal == 15) {
-        myCar.Move(Backward, 255);
+      Serial.print("IR Code Received (Hex): 0x");
+      Serial.println(irrecv.decodedIRData.command, HEX);
+      if (signal == 70) {
+        myCar.Move(Forward, 128);
+      } else if (signal == 21) {
+        myCar.Move(Backward, 128);
+      } else if (signal == 64) {
+        myCar.Move(Stop, 0);
+      } else if (signal == 67) {
+        myCar.Move(Move_Right, 128);
+      } else if (signal == 68) {
+        myCar.Move(Move_Left, 128);
+      } else if (signal == 13) {
+        myCar.Move(Clockwise, 128);
+      } else if (signal == 22) {
+        myCar.Move(Contrarotate, 128);
       }
     }
     irrecv.resume();
