@@ -2,12 +2,15 @@
 #include <vehicle.h>
 #include <ultrasonic.h>
 #include <ESP32Servo.h>
+#include <IRremote.h>
 
 #define pinLeftLED 2
 #define pinIr 4
 #define pinRightLED 12
 #define pinServo 25
 #define pinBuzzer 33
+
+IRrecv irrecv(pinIr);
 
 vehicle myCar;
 
@@ -34,6 +37,22 @@ float lRotateIndex = 1;
 //   tone(pinBuzzer, 494);
 //   noTone(pinBuzzer);
 // }
+
+void remote() {
+  if (irrecv.decode()) {
+    if (!irrecv.decodedIRData.flags) {
+      Serial.print("IR Code Received: 0x");
+      int signal = (irrecv.decodedIRData.command, HEX);
+      Serial.println(signal);
+      if (signal == 46) {
+        myCar.Move(Forward, 255);
+      } else if (signal == 15) {
+        myCar.Move(Backward, 255);
+      }
+    }
+    irrecv.resume();
+  }
+}
 
 void led() {
   digitalWrite(pinLeftLED, HIGH);
@@ -64,7 +83,7 @@ void setup() {
 
   servo.attach(pinServo, 500, 2500);
   servo.setPeriodHertz(50);
-  servo.write(90);
+  // servo.write(90);
 
   pinMode(pinLeftLED, OUTPUT);
   pinMode(pinIr, INPUT);
@@ -72,10 +91,13 @@ void setup() {
   pinMode(pinBuzzer, OUTPUT);
 
   myCar.Init();
+
+  irrecv.enableIRIn();
 }
 
 void loop() {
-  led();
+  remote();
+  // led();
   // move();
 
   delay(100);
