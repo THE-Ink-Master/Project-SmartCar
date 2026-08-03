@@ -19,6 +19,8 @@ Servo servo;
 float rRotateIndex = 1;
 float lRotateIndex = 1;
 
+int stopSec = 0;
+
 /*
   myCar.Move(Forward, 255);       Forward
   myCar.Move(Backwards, 255);     Backwards
@@ -48,19 +50,48 @@ void remote() {
       Serial.println(irrecv.decodedIRData.command, HEX);
       if (signal == 70) {
         myCar.Move(Forward, 128);
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
       } else if (signal == 21) {
         myCar.Move(Backward, 128);
-      } else if (signal == 64) {
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
+      } else if (signal == 64 || signal == 82) {
         myCar.Move(Stop, 0);
       } else if (signal == 67) {
         myCar.Move(Move_Right, 128);
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
       } else if (signal == 68) {
         myCar.Move(Move_Left, 128);
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
       } else if (signal == 13) {
         myCar.Move(Clockwise, 128);
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
       } else if (signal == 22) {
         myCar.Move(Contrarotate, 128);
+        if (stopSec == 1) {
+          delay(1000);
+          myCar.Move(Stop, 0);
+        }
+      } else if (signal == 66) {
+          stopSec = 0;
+      } else if (signal == 74) {
+          stopSec = 1;
       }
+      Serial.println(stopSec);
     }
     irrecv.resume();
   }
