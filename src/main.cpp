@@ -22,7 +22,10 @@ ultrasonic myUltrasonic;
 Servo servo;
 
 int stopSec = 0;
-int mode = 2;
+int mode = 1;
+
+int randomVal = 0;
+int baseVal = 0;
 
 int ultrasonicDistance;
 
@@ -46,6 +49,46 @@ int ultrasonicDistance;
    noTone(pinBuzzer);
  }
 */
+
+void randomDir()
+{
+  randomVal = rand() % 121;
+  if (randomVal <= 20)
+  {
+    myCar.Move(Forward, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 40 && !randomVal <= 20)
+  {
+    myCar.Move(Move_Left, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 60 && !randomVal <= 40)
+  {
+    myCar.Move(Move_Right, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 80 && !randomVal <= 60)
+  {
+    myCar.Move(Backward, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 100 && !randomVal <= 80)
+  {
+    myCar.Move(Clockwise, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 120 && !randomVal <= 100)
+  {
+    myCar.Move(Contrarotate, 128);
+    delay(1000);
+  }
+  else if (randomVal <= 140 && !randomVal <= 120)
+  {
+    myCar.Move(Stop, 0);
+    delay(1000);
+  }
+}
 
 void led()
 {
@@ -110,36 +153,82 @@ void automatic()
   {
     myCar.Move(Stop, 0);
     servo.write(135);
+    digitalWrite(pinLeftLED, HIGH);
+    digitalWrite(pinRightLED, LOW);
     delay(1000);
     ultrasonicSens();
     if (ultrasonicDistance > 50)
     {
       myCar.Move(Contrarotate, 128);
-      delay(1000);
+      digitalWrite(pinLeftLED, LOW);
+      delay(200);
+      digitalWrite(pinLeftLED, HIGH);
+      delay(200);
+      digitalWrite(pinLeftLED, LOW);
+      delay(200);
+      digitalWrite(pinLeftLED, HIGH);
+      delay(200);
+      digitalWrite(pinLeftLED, LOW);
+      delay(200);
+      digitalWrite(pinLeftLED, HIGH);
       myCar.Move(Stop, 0);
     }
     else
     {
       servo.write(45);
+      digitalWrite(pinLeftLED, LOW);
+      digitalWrite(pinRightLED, HIGH);
       delay(1000);
       ultrasonicSens();
       if (ultrasonicDistance > 50)
       {
         myCar.Move(Clockwise, 128);
-        delay(1000);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
         myCar.Move(Stop, 0);
       }
       else
       {
         myCar.Move(Backward, 128);
-        delay(1000);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
         myCar.Move(Clockwise, 128);
-        delay(1000);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
+        delay(200);
+        digitalWrite(pinRightLED, LOW);
+        delay(200);
+        digitalWrite(pinRightLED, HIGH);
         myCar.Move(Stop, 0);
       }
     }
   }
   servo.write(90);
+  digitalWrite(pinLeftLED, LOW);
+  digitalWrite(pinRightLED, LOW);
 }
 
 void remote()
@@ -155,6 +244,10 @@ void remote()
   else if (mode == 2)
   {
     lineFollow();
+  }
+  else if (mode == 3)
+  {
+    randomDir();
   }
   if (irrecv.decode())
   {
@@ -244,6 +337,25 @@ void remote()
       {
         mode = 2;
       }
+      else if (signal == 28)
+      {
+        mode = 3;
+      }
+      else if (signal == 90)
+      {
+        digitalWrite(pinLeftLED, HIGH);
+        digitalWrite(pinRightLED, HIGH);
+      }
+      else if (signal == 8)
+      {
+        digitalWrite(pinLeftLED, LOW);
+        digitalWrite(pinRightLED, LOW);
+      }
+      else if (signal == 25)
+      {
+        myCar.Move(Stop, 0);
+        delay(5000);
+      }
       // Serial.println(stopSec);
     }
     irrecv.resume();
@@ -272,6 +384,8 @@ void setup()
   myUltrasonic.Init(13, 14);
 
   irrecv.enableIRIn();
+
+  randomSeed(analogRead(0));
 }
 
 void loop()
