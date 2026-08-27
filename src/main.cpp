@@ -13,6 +13,9 @@
 #define pinIRMiddle 36
 #define pinIRRight 39
 
+#define Left 1
+#define Right 0
+
 IRrecv irrecv(pinIr);
 
 vehicle myCar;
@@ -22,7 +25,7 @@ ultrasonic myUltrasonic;
 Servo servo;
 
 int stopSec = 0;
-int mode = 0;
+int mode = 2;
 /*
   Modes:
   mode 0 = Automatic
@@ -30,7 +33,6 @@ int mode = 0;
   mode 2 = Line follow
   mode 3 = Random
 */
-
 int direction = 0;
 int ultrasonicDir = 1;
 
@@ -38,7 +40,12 @@ int lights = 0;
 
 int forward = 0;
 
+int wallDetected = 0;
+
 int randomVal = 0;
+int randomLeftVal = 0;
+int randomRightVal = 0;
+int randomServoVal = 0;
 int baseVal = 0;
 
 int ultrasonicDistance;
@@ -56,17 +63,61 @@ int ultrasonicDistance;
   myCar.Move(Stop, 0)             Stop
 */
 
-/*
- void buzz() {
-   tone(pinBuzzer, 262);
-   tone(pinBuzzer, 494);
-   noTone(pinBuzzer);
- }
+/* 
+  direction = what direct to move (Left and Right are valid) 
+  speed = what speed
 */
+void carRotate(int direction, int speed, int time, int timePer = 100, int enSerial = 0)
+{
+  int localTime = 0;
+  while (time > localTime)
+  {
+    localTime += timePer;
+
+    if (direction == 0)
+    {
+      myCar.Move(Clockwise, speed);
+    }
+    else if (direction == 1)
+    {
+      myCar.Move(Contrarotate, speed);
+    }
+    delay(timePer/2);
+    myCar.Move(Forward, speed);
+    delay(timePer/2);
+
+    if (enSerial == 1)
+    {
+      Serial.print("direction; ");
+      Serial.println(direction);
+      Serial.print("speed; ");
+      Serial.println(speed);
+      Serial.print("time: ");
+      Serial.println(time);
+      Serial.print("local time: ");
+      Serial.println(localTime);
+    }
+  }
+}
+
+void testing()
+{
+  carRotate(Left, 255, 2000);
+  delay(400);
+  carRotate(Right, 255, 2000);
+}
 
 void randomDir()
 {
-  randomVal = rand() % 121;
+  randomVal = rand() % 122;
+  randomLeftVal = rand() % 2;
+  randomRightVal = rand() % 2;
+  randomServoVal = rand() % 181;
+  // Serial.print("Left val: ");
+  // Serial.println(randomLeftVal);
+  digitalWrite(pinLeftLED, randomLeftVal);
+  digitalWrite(pinRightLED, randomRightVal);
+  servo.write(randomServoVal);
   if (randomVal <= 20)
   {
     myCar.Move(Forward, 128);
@@ -119,6 +170,11 @@ void ultrasonicSens()
   ultrasonicDistance = myUltrasonic.Ranging();
 
   Serial.println(ultrasonicDistance);
+
+  if (mode == 0 && ultrasonicDistance < 40)
+  {
+    wallDetected = 1;
+  }
 }
 
 bool stopIfWall(int distance)
@@ -135,11 +191,11 @@ void reverse()
 {
   digitalWrite(pinLeftLED, LOW);
   digitalWrite(pinRightLED, HIGH);
-  analogWrite(pinBuzzer, 2);
+  analogWrite(pinBuzzer, 4);
   delay(400);
   digitalWrite(pinLeftLED, HIGH);
   digitalWrite(pinRightLED, LOW);
-  analogWrite(pinBuzzer, 4);
+  analogWrite(pinBuzzer, 6);
   delay(300);
   analogWrite(pinBuzzer, 0);
 }
@@ -156,20 +212,47 @@ void lineFollow()
   Serial.println("Right ");
   Serial.println(right);
 
-  if (middle > 2500)
+  if (right > 2700 && left < 2700 && middle > 2500)
+  {
+    myCar.Move(Move_Right, 128);
+    delay(200);
+    myCar.Move(Forward, 32);
+    Serial.println("Going right");
+  }
+  else if (left > 2700 && right < 2700 && middle > 2500)
+  {
+    myCar.Move(Move_Left, 128);
+    delay(200);
+    myCar.Move(Forward, 32);
+    Serial.println("Going left");
+  }
+  else if (middle > 2500)
   {
     myCar.Move(Forward, 64);
+    Serial.println("Going forward");
   }
   else if (right > 2700 && left < 2700)
   {
-    myCar.Move(Clockwise, 128);
-    delay(100);
+    while (middle < 2500)
+    {
+      myCar.Move(Clockwise, 128);
+      Serial.println("Rotating right");
+      middle = analogRead(36);
+      delay(100);
+    }
+    // delay(100);
     myCar.Move(Forward, 32);
   }
   else if (left > 2700 && right < 2700)
   {
-    myCar.Move(Contrarotate, 128);
-    delay(100);
+    while (middle < 2500)
+    {
+      myCar.Move(Contrarotate, 128);
+      Serial.println("Rotating left");
+      middle = analogRead(36);
+      delay(100);
+    }
+    // delay(100);
     myCar.Move(Forward, 32);
   }
   myCar.Move(Forward, 128);
@@ -177,12 +260,26 @@ void lineFollow()
 
 void automatic()
 {
+  servo.write(90);
+  delay(500);
   ultrasonicSens();
-  if (ultrasonicDistance > 40 && forward == 1)
+  if (wallDetected == 0)
+  {
+    servo.write(45);
+    delay(500);
+    ultrasonicSens();
+  }
+  if (wallDetected == 0)
+  {
+    servo.write(135);
+    delay(500);
+    ultrasonicSens();
+  }
+  if (ultrasonicDistance > 40 && forward == 1 && wallDetected == 0)
   {
     myCar.Move(Forward, 128);
   }
-  else if (ultrasonicDistance > 40 && forward == 0)
+  else if (ultrasonicDistance > 40 && forward == 0 && wallDetected == 0)
   {
     myCar.Move(Forward, 255);
     delay(100);
@@ -278,6 +375,7 @@ void automatic()
   servo.write(90);
   digitalWrite(pinLeftLED, LOW);
   digitalWrite(pinRightLED, LOW);
+  wallDetected = 0;
 }
 
 void manualMode()
@@ -320,7 +418,7 @@ void manualMode()
   }
 }
 
-void remote()
+void whichMode()
 {
   if (mode == 0)
   {
@@ -338,6 +436,10 @@ void remote()
   {
     randomDir();
   }
+}
+
+void remote()
+{
   if (irrecv.decode())
   {
     if (!irrecv.decodedIRData.flags)
@@ -443,14 +545,14 @@ void remote()
         }
         myCar.Move(Clockwise, 255);
         delay(100);
-        myCar.Move(Backward, 128);
+        myCar.Move(Clockwise, 128);
         if (stopSec == 1)
         {
           delay(900);
           myCar.Move(Stop, 0);
         }
       }
-      else if (signal == 22 && (mode == 1))
+      else if (signal == 22 && mode == 1)
       {
         direction = 6;
         ultrasonicDir = 6;
@@ -513,12 +615,6 @@ void remote()
       }
       else if (signal == 25)
       {
-        direction = 0;
-        ultrasonicDir = 1;
-        digitalWrite(pinLeftLED, LOW);
-        digitalWrite(pinRightLED, LOW);
-        myCar.Move(Stop, 0);
-        delay(5000);
       }
       else if (signal == 82 && mode == 1)
       {
@@ -590,11 +686,9 @@ void remote()
           myCar.Move(Contrarotate, 128);
         }
       }
-      // Serial.println(stopSec);
     }
     irrecv.resume();
   }
-  // Serial.println(mode);
 }
 
 void setup()
@@ -603,7 +697,7 @@ void setup()
 
   servo.attach(pinServo, 500, 2500);
   servo.setPeriodHertz(50);
-  // servo.write(90);
+  servo.write(90);
 
   pinMode(pinLeftLED, OUTPUT);
   pinMode(pinIr, INPUT);
@@ -624,10 +718,9 @@ void setup()
 
 void loop()
 {
-  remote();
-  // ultrasonicSens();
-  // lineFollow();
-  // led();
+  // whichMode();
+  // remote();
+  testing();
 
   delay(100);
 }
