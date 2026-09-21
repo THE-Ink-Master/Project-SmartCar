@@ -33,6 +33,14 @@ int mode = 2;
   mode 2 = Line follow
   mode 3 = Random
 */
+
+enum modes {
+  automatic,
+  manual,
+  line,
+  random
+};
+
 int direction = 0;
 int ultrasonicDir = 1;
 
@@ -215,20 +223,22 @@ void lineFollow()
   if (right > 2700 && left < 2700 && middle > 2500)
   {
     myCar.Move(Move_Right, 128);
-    delay(200);
+    delay(100);
     myCar.Move(Forward, 128);
     Serial.println("Going right");
   }
   else if (left > 2700 && right < 2700 && middle > 2500)
   {
     myCar.Move(Move_Left, 128);
-    delay(200);
+    delay(100);
     myCar.Move(Forward, 128);
     Serial.println("Going left");
   }
   else if (middle > 2500)
   {
     myCar.Move(Forward, 128);
+    delay(20);
+    myCar.Move(Forward, 64);
     Serial.println("Going forward");
   }
   else if (right > 2700 && left < 2700)
@@ -238,7 +248,7 @@ void lineFollow()
       myCar.Move(Clockwise, 128);
       Serial.println("Rotating right");
       middle = analogRead(36);
-      delay(100);
+      delay(50);
     }
     // delay(100);
     myCar.Move(Forward, 128);
@@ -250,7 +260,7 @@ void lineFollow()
       myCar.Move(Contrarotate, 128);
       Serial.println("Rotating left");
       middle = analogRead(36);
-      delay(100);
+      delay(50);
     }
     // delay(100);
     myCar.Move(Forward, 128);
