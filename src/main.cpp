@@ -216,19 +216,19 @@ void lineFollow()
   {
     myCar.Move(Move_Right, 128);
     delay(200);
-    myCar.Move(Forward, 64);
+    myCar.Move(Forward, 128);
     Serial.println("Going right");
   }
   else if (left > 2700 && right < 2700 && middle > 2500)
   {
     myCar.Move(Move_Left, 128);
     delay(200);
-    myCar.Move(Forward, 64);
+    myCar.Move(Forward, 128);
     Serial.println("Going left");
   }
   else if (middle > 2500)
   {
-    myCar.Move(Forward, 64);
+    myCar.Move(Forward, 128);
     Serial.println("Going forward");
   }
   else if (right > 2700 && left < 2700)
@@ -241,7 +241,7 @@ void lineFollow()
       delay(100);
     }
     // delay(100);
-    myCar.Move(Forward, 64);
+    myCar.Move(Forward, 128);
   }
   else if (left > 2700 && right < 2700)
   {
@@ -253,7 +253,7 @@ void lineFollow()
       delay(100);
     }
     // delay(100);
-    myCar.Move(Forward, 64);
+    myCar.Move(Forward, 128);
   }
   myCar.Move(Forward, 128);
 }
