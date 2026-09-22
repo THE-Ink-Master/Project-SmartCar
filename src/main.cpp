@@ -34,11 +34,13 @@ int mode = 2;
   mode 3 = Random
 */
 
+int lastSeen = 0;
+
 enum modes {
   automatic,
   manual,
   line,
-  random
+  rando
 };
 
 int direction = 0;
@@ -220,17 +222,18 @@ void lineFollow()
   Serial.println("Right ");
   Serial.println(right);
 
+  
   if (right > 2700 && left < 2700 && middle > 2500)
   {
     myCar.Move(Move_Right, 128);
-    delay(100);
+    delay(50);
     myCar.Move(Forward, 128);
     Serial.println("Going right");
   }
   else if (left > 2700 && right < 2700 && middle > 2500)
   {
     myCar.Move(Move_Left, 128);
-    delay(100);
+    delay(50);
     myCar.Move(Forward, 128);
     Serial.println("Going left");
   }
@@ -263,12 +266,31 @@ void lineFollow()
       delay(50);
     }
     // delay(100);
-    myCar.Move(Forward, 128);
+    myCar.Move(Forward, 96);
   }
-  myCar.Move(Forward, 128);
+  else if (lastSeen > 2500 && middle < 2500 && left < 2700 && right < 2700) 
+  {
+    while (middle < 2500) {
+      middle = analogRead(36);
+      myCar.Move(Backward, 128);
+    }
+    delay(20);
+    if (left > 2700 && right < 2700) {
+      myCar.Move(Move_Left, 128);
+    }
+    else if (left < 2700 && right > 2700) {
+      myCar.Move(Move_Right, 128); 
+    }
+    else {
+      myCar.Move(Move_Left, 128);
+    }
+    delay(120);
+  }
+  myCar.Move(Forward, 80);
+  lastSeen = middle;
 }
 
-void automatic()
+void automaticMode()
 {
   servo.write(90);
   delay(500);
@@ -432,7 +454,7 @@ void whichMode()
 {
   if (mode == 0)
   {
-    automatic();
+    automaticMode();
   }
   else if (mode == 1)
   {
