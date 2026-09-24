@@ -24,8 +24,7 @@ ultrasonic myUltrasonic;
 
 Servo servo;
 
-int stopSec = 0;
-int mode = 2;
+// int mode = 1;
 /*
   Modes:
   mode 0 = Automatic
@@ -43,8 +42,35 @@ enum modes {
   rando
 };
 
-int direction = 0;
-int ultrasonicDir = 1;
+modes mode = manual;
+
+// int direction = 0;
+
+enum whichWay {
+  GoStop,
+  GoForward,
+  GoRotateRight,
+  GoTurnRight,
+  GoRight,
+  GoBack,
+  GoLeft,
+  GoTurnLeft,
+  GoRotateLeft
+};
+
+whichWay direction = GoForward;
+
+enum ultrasonicWhichWay {
+  uGoForward,
+  uGoRotateRight,
+  uGoRight,
+  uGoLeft,
+  uGoRotateLeft
+};
+
+ultrasonicWhichWay ultrasonicDir = uGoForward;
+
+// int ultrasonicDir = 1;
 
 int lights = 0;
 
@@ -92,10 +118,12 @@ void carRotate(int direction, int speed, int time, int timePer = 100, int enSeri
     {
       myCar.Move(Contrarotate, speed);
     }
-    delay(timePer/2);
+    delay(timePer/3);
     myCar.Move(Forward, speed);
     delay(timePer/2);
+    int noTime = (timePer - ((timePer/3) + (timePer/2)));
 
+    myCar.Move(Stop, 0);
     if (enSerial == 1)
     {
       Serial.print("direction; ");
@@ -106,15 +134,10 @@ void carRotate(int direction, int speed, int time, int timePer = 100, int enSeri
       Serial.println(time);
       Serial.print("local time: ");
       Serial.println(localTime);
+      Serial.print("time gone: ");
+      Serial.println(noTime);
     }
   }
-}
-
-void testing()
-{
-  carRotate(Left, 255, 2000);
-  delay(400);
-  carRotate(Right, 255, 2000);
 }
 
 void randomDir()
@@ -270,9 +293,12 @@ void lineFollow()
   }
   else if (lastSeen > 2500 && middle < 2500 && left < 2700 && right < 2700) 
   {
+    myCar.Move(Backward, 128);
+    delay(50);
     while (middle < 2500) {
       middle = analogRead(36);
-      myCar.Move(Backward, 128);
+      Serial.println(middle);
+      myCar.Move(Backward, 64);
     }
     delay(20);
     if (left > 2700 && right < 2700) {
@@ -286,7 +312,7 @@ void lineFollow()
     }
     delay(120);
   }
-  myCar.Move(Forward, 80);
+  myCar.Move(Forward, 96);
   lastSeen = middle;
 }
 
@@ -413,36 +439,39 @@ void automaticMode()
 void manualMode()
 {
   ultrasonicSens();
-  if (ultrasonicDir == 1)
+  if (ultrasonicDir == uGoForward)
   {
     servo.write(90);
   }
-  else if (ultrasonicDir == 2)
+  else if (ultrasonicDir == uGoRotateRight)
   {
     servo.write(45);
   }
-  else if (ultrasonicDir == 3)
+  else if (ultrasonicDir == uGoRight)
   {
     servo.write(0);
   }
-  else if (ultrasonicDir == 5)
+  else if (ultrasonicDir == uGoLeft)
   {
     servo.write(180);
   }
-  else if (ultrasonicDir == 6)
+  else if (ultrasonicDir == uGoRotateLeft)
   {
     servo.write(135);
   }
 
-  if (direction == ultrasonicDir)
+
+  if ((direction == GoForward && ultrasonicDir == uGoForward) || (direction == GoRotateRight && ultrasonicDir == uGoRotateRight) || (direction == GoRight && ultrasonicDir == uGoRight) || (direction == GoLeft && ultrasonicDir == uGoLeft) || (direction == GoRotateLeft && ultrasonicDir == uGoRotateLeft))
   {
     stopIfWall(30);
   }
 
-  if (direction == 4)
+
+  if (direction == GoBack)
   {
     reverse();
   }
+
   else if (lights == 0)
   {
     digitalWrite(pinLeftLED, LOW);
@@ -452,19 +481,19 @@ void manualMode()
 
 void whichMode()
 {
-  if (mode == 0)
+  if (mode == automatic)
   {
     automaticMode();
   }
-  else if (mode == 1)
+  else if (mode == manual)
   {
     manualMode();
   }
-  else if (mode == 2)
+  else if (mode == line)
   {
     lineFollow();
   }
-  else if (mode == 3)
+  else if (mode == rando)
   {
     randomDir();
   }
@@ -481,10 +510,10 @@ void remote()
       Serial.println(signal);
       Serial.print("IR Code Received (Hex): 0x");
       Serial.println(irrecv.decodedIRData.command, HEX);
-      if (signal == 70 && mode == 1)
+      if (signal == 70 && mode == manual)
       {
-        direction = 1;
-        ultrasonicDir = 1;
+        direction = GoForward;
+        ultrasonicDir = uGoForward;
         manualMode();
         delay(200);
         bool temp = stopIfWall(30);
@@ -495,39 +524,27 @@ void remote()
         myCar.Move(Forward, 255);
         delay(100);
         myCar.Move(Forward, 128);
-        if (stopSec == 1)
-        {
-          delay(900);
-          myCar.Move(Stop, 0);
-        }
       }
-      else if (signal == 21 && mode == 1)
+      else if (signal == 21 && mode == manual)
       {
-        direction = 4;
-        ultrasonicDir = 1;
+        direction = GoBack;
+        ultrasonicDir = uGoForward;
         myCar.Move(Backward, 255);
         delay(100);
         myCar.Move(Backward, 128);
-        if (stopSec == 1)
-        {
-          reverse();
-          delay(100);
-          myCar.Move(Stop, 0);
-          direction = 1;
-        }
       }
-      else if (signal == 64 && mode == 1)
+      else if (signal == 64 && mode == manual)
       {
-        direction = 0;
-        ultrasonicDir = 1;
+        direction = GoStop;
+        ultrasonicDir = uGoForward;
         digitalWrite(pinLeftLED, LOW);
         digitalWrite(pinRightLED, LOW);
         myCar.Move(Stop, 0);
       }
-      else if (signal == 67 && mode == 1)
+      else if (signal == 67 && mode == manual)
       {
-        direction = 3;
-        ultrasonicDir = 3;
+        direction = GoRight;
+        ultrasonicDir = uGoRight;
         manualMode();
         delay(200);
         bool temp = stopIfWall(30);
@@ -538,16 +555,11 @@ void remote()
         myCar.Move(Move_Right, 255);
         delay(100);
         myCar.Move(Move_Right, 128);
-        if (stopSec == 1)
-        {
-          delay(900);
-          myCar.Move(Stop, 0);
-        }
       }
-      else if (signal == 68 && mode == 1)
+      else if (signal == 68 && mode == manual)
       {
-        direction = 5;
-        ultrasonicDir = 5;
+        direction = GoLeft;
+        ultrasonicDir = uGoLeft;
         manualMode();
         delay(200);
         bool temp = stopIfWall(30);
@@ -558,36 +570,19 @@ void remote()
         myCar.Move(Move_Left, 255);
         delay(100);
         myCar.Move(Move_Left, 128);
-        if (stopSec == 1)
-        {
-          delay(900);
-          myCar.Move(Stop, 0);
-        }
       }
-      else if (signal == 13 && mode == 1)
+      else if (signal == 13 && mode == manual)
       {
-        direction = 2;
-        ultrasonicDir = 2;
-        manualMode();
-        delay(200);
-        bool temp = stopIfWall(30);
-        if (temp == true)
-        {
-          return;
-        }
+        direction = GoRotateRight;
+        ultrasonicDir = uGoRotateRight;
         myCar.Move(Clockwise, 255);
         delay(100);
         myCar.Move(Clockwise, 128);
-        if (stopSec == 1)
-        {
-          delay(900);
-          myCar.Move(Stop, 0);
-        }
       }
-      else if (signal == 22 && mode == 1)
+      else if (signal == 22 && mode == manual)
       {
-        direction = 6;
-        ultrasonicDir = 6;
+        direction = GoRotateLeft;
+        ultrasonicDir = uGoRotateLeft;
         manualMode();
         delay(200);
         bool temp = stopIfWall(30);
@@ -598,40 +593,45 @@ void remote()
         myCar.Move(Contrarotate, 255);
         delay(100);
         myCar.Move(Contrarotate, 128);
-        if (stopSec == 1)
-        {
-          delay(900);
-          myCar.Move(Stop, 0);
-        }
       }
       else if (signal == 66)
       {
-        stopSec = 0;
+        direction = GoTurnLeft;
+        ultrasonicDir = uGoRotateLeft;
+        manualMode();
+        carRotate(Left, 256, 2000);
+        direction = GoStop;
+        ultrasonicDir = uGoForward;
       }
       else if (signal == 74)
       {
-        stopSec = 1;
+        direction = GoTurnRight;
+        ultrasonicDir = uGoRotateRight;
+        manualMode();
+        carRotate(Right, 256, 2000);
+        direction = GoStop;
+        ultrasonicDir = uGoForward;
       }
       else if (signal == 12)
       {
-        direction = 0;
-        mode = 0;
+        direction = GoStop;
+        mode = automatic;
       }
       else if (signal == 24)
       {
-        direction = 0;
-        mode = 1;
+        direction = GoStop;
+        mode = manual;
         myCar.Move(Stop, 0);
       }
       else if (signal == 94)
       {
-        direction = 0;
-        mode = 2;
+        direction = GoStop;
+        mode = line;
       }
       else if (signal == 28)
       {
-        direction = 0;
-        mode = 3;
+        direction = GoStop;
+        mode = rando;
       }
       else if (signal == 90)
       {
@@ -752,7 +752,6 @@ void loop()
 {
   whichMode();
   remote();
-  // testing();
 
   delay(100);
 }
