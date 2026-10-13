@@ -1,9 +1,11 @@
+// Libraries
 #include <Arduino.h>
 #include <vehicle.h>
 #include <ultrasonic.h>
 #include <ESP32Servo.h>
 #include <IRremote.h>
 
+// Pins
 #define pinLeftLED 2
 #define pinIr 4
 #define pinRightLED 12
@@ -13,29 +15,56 @@
 #define pinIRMiddle 36
 #define pinIRRight 39
 
+// definitions for turning
 #define Left 1
 #define Right 0
 
+// IR, Car, Ultrasonic and servo setup
 IRrecv irrecv(pinIr);
-
 vehicle myCar;
-
 ultrasonic myUltrasonic;
-
 Servo servo;
 
-// int mode = 1;
 /*
-  Modes:
-  mode 0 = Automatic
-  mode 1 = Manual
-  mode 2 = Line follow
-  mode 3 = Random
+  Buttons and what they do
+  _______________
+  |             |
+  |      ^      |
+  |    < K >    |
+  |      v      |
+  |             |
+  |   1  2  3   |
+  |   4  5  6   |
+  |   7  8  9   |
+  |   *  0  #   |
+  |             |
+  ---------------
+
+  ^ - Move Forward (Manual Mode)
+  < - Strafe Left (Manual Mode)
+  > - Strafe Right (Manual Mode)
+  v - reverse (Manual Mode)
+  K - Stop (Manual Mode)
+  1 - Rotate Left (Manual Mode)
+  2 - NU (Not Used)
+  3 - Rotate Right (Manual Mode)
+  4 - Change mode to Automatic Mode
+  5 - Change mode to Manual Mode
+  6 - Change mode to Line Following Mode
+  7 - Turn LEDs Off
+  8 - Change mode to Random Mone
+  9 - Turn LEDs On
+  * - Turn Left (Manual Mode)
+  0 - Speed up (Manual Mode)
+  # - Turn Right (Manual Mode)
 */
 
+// Line following setup
 int lastSeen = 0;
 
-enum modes {
+// Modes and directions setup
+enum modes
+{
   automatic,
   manual,
   line,
@@ -44,9 +73,8 @@ enum modes {
 
 modes mode = manual;
 
-// int direction = 0;
-
-enum whichWay {
+enum whichWay
+{
   GoStop,
   GoForward,
   GoRotateRight,
@@ -60,7 +88,8 @@ enum whichWay {
 
 whichWay direction = GoForward;
 
-enum ultrasonicWhichWay {
+enum ultrasonicWhichWay
+{
   uGoForward,
   uGoRotateRight,
   uGoRight,
@@ -70,14 +99,13 @@ enum ultrasonicWhichWay {
 
 ultrasonicWhichWay ultrasonicDir = uGoForward;
 
-// int ultrasonicDir = 1;
-
 int lights = 0;
 
 int forward = 0;
 
 int wallDetected = 0;
 
+// Random Value setup
 int randomVal = 0;
 int randomLeftVal = 0;
 int randomRightVal = 0;
@@ -99,11 +127,13 @@ int ultrasonicDistance;
   myCar.Move(Stop, 0)             Stop
 */
 
-/* 
-  direction = what direct to move (Left and Right are valid) 
+/*
+  direction = what direct to move (Left and Right are valid)
   speed = what speed
 */
-void carRotate(int direction, int speed, int time, int timePer = 100, int enSerial = 0)
+
+// Turns the car (direction = left or right, speed = speed (0-255), time = how long it turns for in ms, timePer = time per loop (default 100ms), enSerial = enable serial output)
+void carTurn(int direction, int speed, int time, int timePer = 100, int enSerial = 0)
 {
   int localTime = 0;
   while (time > localTime)
@@ -118,10 +148,10 @@ void carRotate(int direction, int speed, int time, int timePer = 100, int enSeri
     {
       myCar.Move(Contrarotate, speed);
     }
-    delay(timePer/3);
+    delay(timePer / 3);
     myCar.Move(Forward, speed);
-    delay(timePer/2);
-    int noTime = (timePer - ((timePer/3) + (timePer/2)));
+    delay(timePer / 2);
+    int noTime = (timePer - ((timePer / 3) + (timePer / 2)));
 
     myCar.Move(Stop, 0);
     if (enSerial == 1)
@@ -245,7 +275,6 @@ void lineFollow()
   Serial.println("Right ");
   Serial.println(right);
 
-  
   if (right > 2700 && left < 2700 && middle > 2500)
   {
     myCar.Move(Move_Right, 128);
@@ -291,23 +320,27 @@ void lineFollow()
     // delay(100);
     myCar.Move(Forward, 96);
   }
-  else if (lastSeen > 2500 && middle < 2500 && left < 2700 && right < 2700) 
+  else if (lastSeen > 2500 && middle < 2500 && left < 2700 && right < 2700)
   {
     myCar.Move(Backward, 128);
     delay(50);
-    while (middle < 2500) {
+    while (middle < 2500)
+    {
       middle = analogRead(36);
       Serial.println(middle);
       myCar.Move(Backward, 64);
     }
     delay(20);
-    if (left > 2700 && right < 2700) {
+    if (left > 2700 && right < 2700)
+    {
       myCar.Move(Move_Left, 128);
     }
-    else if (left < 2700 && right > 2700) {
-      myCar.Move(Move_Right, 128); 
+    else if (left < 2700 && right > 2700)
+    {
+      myCar.Move(Move_Right, 128);
     }
-    else {
+    else
+    {
       myCar.Move(Move_Left, 128);
     }
     delay(120);
@@ -460,12 +493,10 @@ void manualMode()
     servo.write(135);
   }
 
-
   if ((direction == GoForward && ultrasonicDir == uGoForward) || (direction == GoRotateRight && ultrasonicDir == uGoRotateRight) || (direction == GoRight && ultrasonicDir == uGoRight) || (direction == GoLeft && ultrasonicDir == uGoLeft) || (direction == GoRotateLeft && ultrasonicDir == uGoRotateLeft))
   {
     stopIfWall(30);
   }
-
 
   if (direction == GoBack)
   {
@@ -599,7 +630,7 @@ void remote()
         direction = GoTurnLeft;
         ultrasonicDir = uGoRotateLeft;
         manualMode();
-        carRotate(Left, 256, 2000);
+        carTurn(Left, 256, 2000);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
@@ -608,7 +639,7 @@ void remote()
         direction = GoTurnRight;
         ultrasonicDir = uGoRotateRight;
         manualMode();
-        carRotate(Right, 256, 2000);
+        carTurn(Right, 256, 2000);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
