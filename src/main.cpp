@@ -43,7 +43,7 @@ Servo servo;
   ^ - Move Forward (Manual Mode)
   < - Strafe Left (Manual Mode)
   > - Strafe Right (Manual Mode)
-  v - reverse (Manual Mode)
+  v - Reverse (Manual Mode)
   K - Stop (Manual Mode)
   1 - Rotate Left (Manual Mode)
   2 - NU (Not Used)
@@ -132,12 +132,41 @@ int ultrasonicDistance;
   speed = what speed
 */
 
+void ultrasonicSens(int enSerial = 0)
+{
+  ultrasonicDistance = myUltrasonic.Ranging();
+
+  if (enSerial == 1)
+  {
+    Serial.print("Ultrasonic Distance: ");
+    Serial.print(ultrasonicDistance);
+    Serial.println("cm");
+  }
+
+  if (mode == 0 && ultrasonicDistance < 40)
+  {
+    wallDetected = 1;
+  }
+}
+
+bool stopIfWall(int distance)
+{
+  if (ultrasonicDistance < distance)
+  {
+    myCar.Move(Stop, 0);
+    return true;
+  }
+  return false;
+}
+
 // Turns the car (direction = left or right, speed = speed (0-255), time = how long it turns for in ms, timePer = time per loop (default 100ms), enSerial = enable serial output)
 void carTurn(int direction, int speed, int time, int timePer = 100, int enSerial = 0)
 {
+  // localTime is the codes internal track of time
   int localTime = 0;
   while (time > localTime)
   {
+    // Increase localTime by time per
     localTime += timePer;
 
     if (direction == 0)
@@ -150,37 +179,44 @@ void carTurn(int direction, int speed, int time, int timePer = 100, int enSerial
     }
     delay(timePer / 3);
     myCar.Move(Forward, speed);
-    delay(timePer / 2);
-    int noTime = (timePer - ((timePer / 3) + (timePer / 2)));
+    delay(timePer / 3);
+    delay(timePer / 3);
 
     myCar.Move(Stop, 0);
     if (enSerial == 1)
     {
-      Serial.print("direction; ");
+      Serial.print("direction: ");
       Serial.println(direction);
-      Serial.print("speed; ");
+      Serial.print("speed: ");
       Serial.println(speed);
       Serial.print("time: ");
       Serial.println(time);
       Serial.print("local time: ");
       Serial.println(localTime);
-      Serial.print("time gone: ");
-      Serial.println(noTime);
+    }
+    ultrasonicSens();
+    bool temp = stopIfWall(60);
+    if (temp == true)
+    {
+      break;
     }
   }
 }
 
-void randomDir()
+// Gets random values for all actuators and sets actuators to them
+void randomDir(int enSerial = 0)
 {
+  // Get random value
   randomVal = rand() % 122;
   randomLeftVal = rand() % 2;
   randomRightVal = rand() % 2;
   randomServoVal = rand() % 181;
-  // Serial.print("Left val: ");
-  // Serial.println(randomLeftVal);
+  // Set LEDs to random values
   digitalWrite(pinLeftLED, randomLeftVal);
   digitalWrite(pinRightLED, randomRightVal);
+  // Set servo to random value
   servo.write(randomServoVal);
+  // Set car direction based on random value
   if (randomVal <= 20)
   {
     myCar.Move(Forward, 128);
@@ -228,28 +264,6 @@ void led()
   delay(400);
 }
 
-void ultrasonicSens()
-{
-  ultrasonicDistance = myUltrasonic.Ranging();
-
-  Serial.println(ultrasonicDistance);
-
-  if (mode == 0 && ultrasonicDistance < 40)
-  {
-    wallDetected = 1;
-  }
-}
-
-bool stopIfWall(int distance)
-{
-  if (ultrasonicDistance < distance)
-  {
-    myCar.Move(Stop, 0);
-    return true;
-  }
-  return false;
-}
-
 void reverse()
 {
   digitalWrite(pinLeftLED, LOW);
@@ -263,45 +277,60 @@ void reverse()
   analogWrite(pinBuzzer, 0);
 }
 
-void lineFollow()
+void lineFollow(int enSerial = 0)
 {
   int left = analogRead(35);
   int middle = analogRead(36);
   int right = analogRead(39);
-  Serial.println("Left: ");
-  Serial.println(left);
-  Serial.println("Middle: ");
-  Serial.println(middle);
-  Serial.println("Right ");
-  Serial.println(right);
+  if (enSerial == 1)
+  {
+    Serial.println("Left: ");
+    Serial.println(left);
+    Serial.println("Middle: ");
+    Serial.println(middle);
+    Serial.println("Right ");
+    Serial.println(right);
+  }
 
   if (right > 2700 && left < 2700 && middle > 2500)
   {
     myCar.Move(Move_Right, 128);
     delay(50);
     myCar.Move(Forward, 128);
-    Serial.println("Going right");
+    if (enSerial == 1)
+    {
+      Serial.println("Going right");
+    }
   }
   else if (left > 2700 && right < 2700 && middle > 2500)
   {
     myCar.Move(Move_Left, 128);
     delay(50);
     myCar.Move(Forward, 128);
-    Serial.println("Going left");
+    if (enSerial == 1)
+    {
+      Serial.println("Going left");
+    }
   }
   else if (middle > 2500)
   {
     myCar.Move(Forward, 128);
     delay(20);
     myCar.Move(Forward, 64);
-    Serial.println("Going forward");
+    if (enSerial == 1)
+    {
+      Serial.println("Going forward");
+    }
   }
   else if (right > 2700 && left < 2700)
   {
     while (middle < 2500)
     {
       myCar.Move(Clockwise, 128);
-      Serial.println("Rotating right");
+      if (enSerial == 1)
+      {
+        Serial.println("Rotating right");
+      }
       middle = analogRead(36);
       delay(50);
     }
@@ -313,7 +342,10 @@ void lineFollow()
     while (middle < 2500)
     {
       myCar.Move(Contrarotate, 128);
-      Serial.println("Rotating left");
+      if (enSerial == 1)
+      {
+        Serial.println("Rotating left");
+      }
       middle = analogRead(36);
       delay(50);
     }
@@ -327,7 +359,10 @@ void lineFollow()
     while (middle < 2500)
     {
       middle = analogRead(36);
-      Serial.println(middle);
+      if (enSerial == 1)
+      {
+        Serial.println(middle);
+      }
       myCar.Move(Backward, 64);
     }
     delay(20);
@@ -349,7 +384,34 @@ void lineFollow()
   lastSeen = middle;
 }
 
-void automaticMode()
+void cycle(uint8_t starting, int pin, int cycles,int enSerial)
+{
+  int currentCycle = 0;
+  uint8_t Ending = LOW;
+  if (starting == LOW) {
+    Ending = HIGH;
+  }
+  while (cycles > currentCycle) {
+    digitalWrite(pin, starting);
+    delay(200);
+    digitalWrite(pin, Ending);
+    delay(200);
+    currentCycle += 1;
+    if (enSerial == 1) 
+    {
+      Serial.print("Current cycle: ");
+      Serial.println(currentCycle);
+      Serial.print("Cycles: ");
+      Serial.println(cycles);
+      Serial.print("Starting with: ");
+      Serial.println(starting);
+      Serial.print("Ending with: ");
+      Serial.println(Ending);
+    }
+  }
+}
+
+void automaticMode(int enSerial = 0)
 {
   servo.write(90);
   delay(500);
@@ -358,13 +420,13 @@ void automaticMode()
   {
     servo.write(45);
     delay(500);
-    ultrasonicSens();
+    ultrasonicSens(enSerial);
   }
   if (wallDetected == 0)
   {
     servo.write(135);
     delay(500);
-    ultrasonicSens();
+    ultrasonicSens(enSerial);
   }
   if (ultrasonicDistance > 40 && forward == 1 && wallDetected == 0)
   {
@@ -393,14 +455,7 @@ void automaticMode()
       delay(100);
       myCar.Move(Contrarotate, 128);
       delay(100);
-      digitalWrite(pinLeftLED, HIGH);
-      delay(200);
-      digitalWrite(pinLeftLED, LOW);
-      delay(200);
-      digitalWrite(pinLeftLED, HIGH);
-      delay(200);
-      digitalWrite(pinLeftLED, LOW);
-      delay(200);
+      cycle(HIGH, pinLeftLED, 2, enSerial);
       digitalWrite(pinLeftLED, HIGH);
       myCar.Move(Stop, 0);
     }
@@ -418,14 +473,7 @@ void automaticMode()
         delay(100);
         myCar.Move(Clockwise, 128);
         delay(100);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
+        cycle(HIGH, pinRightLED, 2, enSerial);
         digitalWrite(pinRightLED, HIGH);
         myCar.Move(Stop, 0);
       }
@@ -436,29 +484,13 @@ void automaticMode()
         delay(100);
         myCar.Move(Backward, 128);
         delay(100);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
+        cycle(HIGH, pinRightLED, 2, enSerial);
         digitalWrite(pinRightLED, HIGH);
         myCar.Move(Clockwise, 255);
-        digitalWrite(pinRightLED, LOW);
         delay(100);
         myCar.Move(Clockwise, 128);
         delay(100);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
-        digitalWrite(pinRightLED, HIGH);
-        delay(200);
-        digitalWrite(pinRightLED, LOW);
-        delay(200);
-        digitalWrite(pinRightLED, HIGH);
+        cycle(LOW, pinRightLED, 2, enSerial);
         myCar.Move(Stop, 0);
       }
     }
@@ -469,9 +501,9 @@ void automaticMode()
   wallDetected = 0;
 }
 
-void manualMode()
+void manualMode(int enSerial = 0)
 {
-  ultrasonicSens();
+  ultrasonicSens(enSerial);
   if (ultrasonicDir == uGoForward)
   {
     servo.write(90);
@@ -510,37 +542,52 @@ void manualMode()
   }
 }
 
-void whichMode()
+void whichMode(int enSerial = 0)
 {
   if (mode == automatic)
   {
-    automaticMode();
+    automaticMode(enSerial);
   }
   else if (mode == manual)
   {
-    manualMode();
+    manualMode(enSerial);
   }
   else if (mode == line)
   {
-    lineFollow();
+    lineFollow(enSerial);
   }
   else if (mode == rando)
   {
-    randomDir();
+    randomDir(enSerial);
   }
 }
 
-void remote()
+void speedUp(int direction, int initSpeed = 255, int endSpeed = 128, int wallStopDist = 50, int time = 1000, int enSerial = 0)
+{
+  myCar.Move(direction, initSpeed);
+  bool wall = stopIfWall(wallStopDist);
+  if (wall == true)
+  {
+    return;
+  }
+  delay(time);
+  myCar.Move(direction, endSpeed);
+}
+
+void remote(int enSerial = 0)
 {
   if (irrecv.decode())
   {
     if (!irrecv.decodedIRData.flags)
     {
-      Serial.print("IR Code Received: ");
       int signal = irrecv.decodedIRData.command;
-      Serial.println(signal);
-      Serial.print("IR Code Received (Hex): 0x");
-      Serial.println(irrecv.decodedIRData.command, HEX);
+      if (enSerial == 1)
+      {
+        Serial.print("IR Code Received: ");
+        Serial.println(signal);
+        Serial.print("IR Code Received (Hex): 0x");
+        Serial.println(irrecv.decodedIRData.command, HEX);
+      }
       if (signal == 70 && mode == manual)
       {
         direction = GoForward;
@@ -630,7 +677,12 @@ void remote()
         direction = GoTurnLeft;
         ultrasonicDir = uGoRotateLeft;
         manualMode();
-        carTurn(Left, 256, 2000);
+        bool temp = stopIfWall(60);
+        if (temp == true)
+        {
+          return;
+        }
+        carTurn(Left, 256, 2000, 100, enSerial);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
@@ -639,7 +691,12 @@ void remote()
         direction = GoTurnRight;
         ultrasonicDir = uGoRotateRight;
         manualMode();
-        carTurn(Right, 256, 2000);
+        bool temp = stopIfWall(60);
+        if (temp == true)
+        {
+          return;
+        }
+        carTurn(Right, 256, 2000, 100, enSerial);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
@@ -678,46 +735,23 @@ void remote()
       }
       else if (signal == 25)
       {
+        // Button 2 (Not Used)
       }
       else if (signal == 82 && mode == 1)
       {
-        if (direction == 0)
+        if (direction == GoForward)
         {
+          speedUp(Forward, 255, 128, 50, 1000, enSerial);
         }
-        else if (direction == 1)
+        else if (direction == GoRotateRight)
         {
-          myCar.Move(Forward, 255);
-          bool temp = stopIfWall(50);
-          if (temp == true)
-          {
-            return;
-          }
-          delay(1000);
-          myCar.Move(Forward, 128);
+          speedUp(Clockwise, 255, 128, 50, 1000, enSerial);
         }
-        else if (direction == 2)
+        else if (direction == GoRight)
         {
-          myCar.Move(Clockwise, 255);
-          bool temp = stopIfWall(50);
-          if (temp == true)
-          {
-            return;
-          }
-          delay(1000);
-          myCar.Move(Clockwise, 128);
+          speedUp(Move_Right, 255, 128, 50, 1000, enSerial);
         }
-        else if (direction == 3)
-        {
-          myCar.Move(Move_Right, 255);
-          bool temp = stopIfWall(50);
-          if (temp == true)
-          {
-            return;
-          }
-          delay(1000);
-          myCar.Move(Move_Right, 128);
-        }
-        else if (direction == 4)
+        else if (direction == GoBack)
         {
           myCar.Move(Backward, 255);
           reverse();
@@ -726,27 +760,13 @@ void remote()
           delay(100);
           myCar.Move(Backward, 128);
         }
-        else if (direction == 5)
+        else if (direction == GoLeft)
         {
-          myCar.Move(Move_Left, 255);
-          bool temp = stopIfWall(50);
-          if (temp == true)
-          {
-            return;
-          }
-          delay(1000);
-          myCar.Move(Move_Left, 128);
+          speedUp(Move_Left, 255, 128, 50, 1000, enSerial);
         }
-        else if (direction == 6)
+        else if (direction == GoRotateLeft)
         {
-          myCar.Move(Contrarotate, 255);
-          bool temp = stopIfWall(50);
-          if (temp == true)
-          {
-            return;
-          }
-          delay(1000);
-          myCar.Move(Contrarotate, 128);
+          speedUp(Contrarotate, 255, 128, 50, 1000, enSerial);
         }
       }
     }
@@ -781,8 +801,9 @@ void setup()
 
 void loop()
 {
-  whichMode();
-  remote();
+  int enSerial = 1;
+  whichMode(enSerial);
+  remote(enSerial);
 
   delay(100);
 }
