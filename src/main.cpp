@@ -504,25 +504,13 @@ void automaticMode(int enSerial = 0)
 void manualMode(int enSerial = 0)
 {
   ultrasonicSens(enSerial);
-  if (ultrasonicDir == uGoForward)
-  {
-    servo.write(90);
-  }
-  else if (ultrasonicDir == uGoRotateRight)
-  {
-    servo.write(45);
-  }
-  else if (ultrasonicDir == uGoRight)
-  {
-    servo.write(0);
-  }
-  else if (ultrasonicDir == uGoLeft)
-  {
-    servo.write(180);
-  }
-  else if (ultrasonicDir == uGoRotateLeft)
-  {
-    servo.write(135);
+  switch (ultrasonicDir) {
+    case uGoForward: servo.write(90); break;
+    case uGoRotateRight: servo.write(45); break;
+    case uGoRight: servo.write(0); break;
+    case uGoLeft: servo.write(180); break;
+    case uGoRotateLeft: servo.write(135); break;
+    default: break;
   }
 
   if ((direction == GoForward && ultrasonicDir == uGoForward) || (direction == GoRotateRight && ultrasonicDir == uGoRotateRight) || (direction == GoRight && ultrasonicDir == uGoRight) || (direction == GoLeft && ultrasonicDir == uGoLeft) || (direction == GoRotateLeft && ultrasonicDir == uGoRotateLeft))
@@ -535,7 +523,7 @@ void manualMode(int enSerial = 0)
     reverse();
   }
 
-  else if (lights == 0)
+  if (lights == 0)
   {
     digitalWrite(pinLeftLED, LOW);
     digitalWrite(pinRightLED, LOW);
@@ -544,21 +532,12 @@ void manualMode(int enSerial = 0)
 
 void whichMode(int enSerial = 0)
 {
-  if (mode == automatic)
-  {
-    automaticMode(enSerial);
-  }
-  else if (mode == manual)
-  {
-    manualMode(enSerial);
-  }
-  else if (mode == line)
-  {
-    lineFollow(enSerial);
-  }
-  else if (mode == rando)
-  {
-    randomDir(enSerial);
+  switch (mode) {
+    case automatic: automaticMode(enSerial); break;
+    case manual: manualMode(enSerial); break;
+    case line: lineFollow(enSerial); break;
+    case rando: randomDir(enSerial); break;
+    default: break;
   }
 }
 
@@ -590,6 +569,7 @@ void remote(int enSerial = 0)
       }
       if (signal == 70 && mode == manual)
       {
+        // Up button
         direction = GoForward;
         ultrasonicDir = uGoForward;
         manualMode();
@@ -605,6 +585,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 21 && mode == manual)
       {
+        // Down button
         direction = GoBack;
         ultrasonicDir = uGoForward;
         myCar.Move(Backward, 255);
@@ -613,6 +594,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 64 && mode == manual)
       {
+        // OK button
         direction = GoStop;
         ultrasonicDir = uGoForward;
         digitalWrite(pinLeftLED, LOW);
@@ -621,6 +603,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 67 && mode == manual)
       {
+        // Right button
         direction = GoRight;
         ultrasonicDir = uGoRight;
         manualMode();
@@ -636,6 +619,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 68 && mode == manual)
       {
+        // Left button
         direction = GoLeft;
         ultrasonicDir = uGoLeft;
         manualMode();
@@ -651,6 +635,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 13 && mode == manual)
       {
+        // button 3
         direction = GoRotateRight;
         ultrasonicDir = uGoRotateRight;
         myCar.Move(Clockwise, 255);
@@ -659,6 +644,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 22 && mode == manual)
       {
+        // button 1
         direction = GoRotateLeft;
         ultrasonicDir = uGoRotateLeft;
         manualMode();
@@ -674,6 +660,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 66)
       {
+        // * button
         direction = GoTurnLeft;
         ultrasonicDir = uGoRotateLeft;
         manualMode();
@@ -688,6 +675,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 74)
       {
+        // # button
         direction = GoTurnRight;
         ultrasonicDir = uGoRotateRight;
         manualMode();
@@ -702,33 +690,39 @@ void remote(int enSerial = 0)
       }
       else if (signal == 12)
       {
+        // button 4
         direction = GoStop;
         mode = automatic;
       }
       else if (signal == 24)
       {
+        // button 5
         direction = GoStop;
         mode = manual;
         myCar.Move(Stop, 0);
       }
       else if (signal == 94)
       {
+        // button 6
         direction = GoStop;
         mode = line;
       }
       else if (signal == 28)
       {
+        // button 8
         direction = GoStop;
         mode = rando;
       }
       else if (signal == 90)
       {
+        // button 9
         lights = 1;
         digitalWrite(pinLeftLED, HIGH);
         digitalWrite(pinRightLED, HIGH);
       }
       else if (signal == 8)
       {
+        //button 7
         lights = 0;
         digitalWrite(pinLeftLED, LOW);
         digitalWrite(pinRightLED, LOW);
@@ -739,6 +733,7 @@ void remote(int enSerial = 0)
       }
       else if (signal == 82 && mode == 1)
       {
+        // button 0
         if (direction == GoForward)
         {
           speedUp(Forward, 255, 128, 50, 1000, enSerial);
