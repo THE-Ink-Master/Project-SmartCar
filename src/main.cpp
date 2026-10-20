@@ -132,6 +132,12 @@ int ultrasonicDistance;
   speed = what speed
 */
 
+void setBothLEDs(uint8_t brightness)
+{
+  digitalWrite(pinLeftLED, brightness);
+  digitalWrite(pinRightLED, brightness);
+}
+
 void ultrasonicSens(int enSerial = 0)
 {
   ultrasonicDistance = myUltrasonic.Ranging();
@@ -160,7 +166,7 @@ bool stopIfWall(int distance)
 }
 
 // Turns the car (direction = left or right, speed = speed (0-255), time = how long it turns for in ms, timePer = time per loop (default 100ms), enSerial = enable serial output)
-void carTurn(int direction, int speed, int time, int timePer = 100, int enSerial = 0)
+void carTurn(int direction, int speed, int time, int timePer = 100, int wallStopDist = 40, int enSerial = 0)
 {
   // localTime is the codes internal track of time
   int localTime = 0;
@@ -195,10 +201,10 @@ void carTurn(int direction, int speed, int time, int timePer = 100, int enSerial
       Serial.println(localTime);
     }
     ultrasonicSens();
-    bool temp = stopIfWall(60);
+    bool temp = stopIfWall(wallStopDist);
     if (temp == true)
     {
-      break;
+      return;
     }
   }
 }
@@ -496,8 +502,7 @@ void automaticMode(int enSerial = 0)
     }
   }
   servo.write(90);
-  digitalWrite(pinLeftLED, LOW);
-  digitalWrite(pinRightLED, LOW);
+  setBothLEDs(LOW);
   wallDetected = 0;
 }
 
@@ -525,8 +530,7 @@ void manualMode(int enSerial = 0)
 
   if (lights == 0)
   {
-    digitalWrite(pinLeftLED, LOW);
-    digitalWrite(pinRightLED, LOW);
+    setBothLEDs(LOW);
   }
 }
 
@@ -577,6 +581,10 @@ void remote(int enSerial = 0)
         bool temp = stopIfWall(30);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
         myCar.Move(Forward, 255);
@@ -597,8 +605,7 @@ void remote(int enSerial = 0)
         // OK button
         direction = GoStop;
         ultrasonicDir = uGoForward;
-        digitalWrite(pinLeftLED, LOW);
-        digitalWrite(pinRightLED, LOW);
+        setBothLEDs(LOW);
         myCar.Move(Stop, 0);
       }
       else if (signal == 67 && mode == manual)
@@ -611,6 +618,10 @@ void remote(int enSerial = 0)
         bool temp = stopIfWall(30);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
         myCar.Move(Move_Right, 255);
@@ -627,6 +638,10 @@ void remote(int enSerial = 0)
         bool temp = stopIfWall(30);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
         myCar.Move(Move_Left, 255);
@@ -652,6 +667,10 @@ void remote(int enSerial = 0)
         bool temp = stopIfWall(30);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
         myCar.Move(Contrarotate, 255);
@@ -664,12 +683,16 @@ void remote(int enSerial = 0)
         direction = GoTurnLeft;
         ultrasonicDir = uGoRotateLeft;
         manualMode();
-        bool temp = stopIfWall(60);
+        bool temp = stopIfWall(40);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
-        carTurn(Left, 256, 2000, 100, enSerial);
+        carTurn(Left, 256, 2000, 100, 40, enSerial);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
@@ -679,12 +702,16 @@ void remote(int enSerial = 0)
         direction = GoTurnRight;
         ultrasonicDir = uGoRotateRight;
         manualMode();
-        bool temp = stopIfWall(60);
+        bool temp = stopIfWall(40);
         if (temp == true)
         {
+          irrecv.resume();
+          myCar.Move(Stop, 0);
+          direction = GoStop;
+          ultrasonicDir = uGoForward;
           return;
         }
-        carTurn(Right, 256, 2000, 100, enSerial);
+        carTurn(Right, 256, 2000, 100, 40, enSerial);
         direction = GoStop;
         ultrasonicDir = uGoForward;
       }
@@ -717,15 +744,13 @@ void remote(int enSerial = 0)
       {
         // button 9
         lights = 1;
-        digitalWrite(pinLeftLED, HIGH);
-        digitalWrite(pinRightLED, HIGH);
+        setBothLEDs(HIGH);
       }
       else if (signal == 8)
       {
         //button 7
         lights = 0;
-        digitalWrite(pinLeftLED, LOW);
-        digitalWrite(pinRightLED, LOW);
+        setBothLEDs(LOW);
       }
       else if (signal == 25)
       {
@@ -766,6 +791,8 @@ void remote(int enSerial = 0)
       }
     }
     irrecv.resume();
+    // direction = GoStop;
+    // ultrasonicDir = uGoForward;
   }
 }
 
